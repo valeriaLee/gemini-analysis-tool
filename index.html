@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini Qualitative Analysis Tool</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <script src="https://unpkg.com/@google/genai@0.14.0/dist/browser.umd.js"></script>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Qualitative Data Analyzer (MVP)</h1>
+        
+        <p>Paste your text or interview transcripts below for thematic analysis.</p>
+        <textarea id="data-input" rows="15" placeholder="Paste your data here..."></textarea>
+        
+        <button id="analyze-button">Analyze Themes</button>
+        
+        <div id="loading-spinner" class="hidden">Analyzing...</div>
+        <div id="error-message" class="error-text hidden"></div>
+        
+        <hr>
+        
+        <h2>Analysis Results</h2>
+        
+        <div id="output-container">
+            <p>Click "Analyze Themes" to get started.</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
