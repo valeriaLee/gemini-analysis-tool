@@ -3,33 +3,224 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gemini Qualitative Analysis Tool</title>
-    <link rel="stylesheet" href="style.css">
-    
-    <script src="https://unpkg.com/@google/genai@0.14.0/dist/browser.umd.js"></script>
+    <title>Qualitative Data Analyzer (MVP)</title>
+    <style>
+        body { 
+            font-family: sans-serif; 
+            padding: 20px; 
+            max-width: 900px;
+            margin: auto;
+        }
+        /* Style for the input area */
+        #dataInput { 
+            width: 100%; 
+            min-height: 200px; 
+            padding: 15px; 
+            margin-bottom: 20px; 
+            border: 1px solid #ccc;
+            box-sizing: border-box; /* Include padding in the element's total width and height */
+            font-size: 16px;
+        }
+        /* Style for the button */
+        #analyzeButton { 
+            background-color: #4CAF50; 
+            color: white; 
+            padding: 10px 20px; 
+            border: none; 
+            cursor: pointer; 
+            border-radius: 5px; 
+            margin-bottom: 20px;
+            font-size: 18px;
+            transition: background-color 0.3s;
+        }
+        #analyzeButton:hover:not(:disabled) {
+            background-color: #45a049;
+        }
+        #analyzeButton:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        /* Style for the results area */
+        #analysisResults { 
+            white-space: pre-wrap; /* Maintains line breaks and spaces for markdown output */
+            background: #f0f0f0; 
+            padding: 20px; 
+            border-radius: 5px; 
+            margin-top: 10px;
+            min-height: 100px;
+            border: 1px solid #e0e0e0;
+        }
+        h2 { margin-top: 30px; }
+    </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>Qualitative Data Analyzer (MVP)</h1>
-        
-        <p>Paste your text or interview transcripts below for thematic analysis.</p>
-        <textarea id="data-input" rows="15" placeholder="Paste your data here..."></textarea>
-        
-        <button id="analyze-button">Analyze Themes</button>
-        
-        <div id="loading-spinner" class="hidden">Analyzing...</div>
-        <div id="error-message" class="error-text hidden"></div>
-        
-        <hr>
-        
-        <h2>Analysis Results</h2>
-        
-        <div id="output-container">
-            <p>Click "Analyze Themes" to get started.</p>
-        </div>
-    </div>
+    <h1>Qualitative Data Analyzer (MVP)</h1>
+    <p>Paste your text or interview transcripts below for thematic analysis.</p>
 
-    <script src="script.js"></script>
+    <textarea id="dataInput" placeholder="Paste your data here..."></textarea>
+
+    <button id="analyzeButton">Analyze Themes</button>
+
+    <h2>Analysis Results</h2>
+
+    <div id="analysisResults">Click "Analyze Themes" to get started.</div>
+
+    <script type="module">
+        // 🚨 IMPORTANT: Use your actual API key here.
+        // I am using the key from your previous example.
+        const API_KEY = "AIzaSyAP5S1IArxmH-35Hk9N6BT-YPpBmI7TCp8"; 
+
+        // ✅ 1. Import the new, recommended SDK as an ES module via CDN
+        import { GoogleGenAI } from "https://esm.run/@google/genai";
+        
+        // Initialize the new SDK
+        const ai = new GoogleGenAI({ 
+            apiKey: API_KEY 
+        });
+
+        // 2. Get the DOM elements
+        const dataInput = document.getElementById('dataInput');
+        const analyzeButton = document.getElementById('analyzeButton');
+        const analysisResults = document.getElementById('analysisResults');
+
+        async function handleAnalysis() {
+            const textData = dataInput.value.trim();
+
+            // Basic input validation
+            if (!textData) {
+                analysisResults.textContent = "Please paste some data into the text area to begin the analysis.";
+                return;
+            }
+
+            // Prepare the UI for the request
+            analysisResults.innerHTML = "Analyzing data... <br> (Using **Gemini 2.5 Pro** for complex thematic analysis. This may take a few seconds.)";
+            analyzeButton.disabled = true;
+
+            // --- JSON PROMPT ---
+            // --- UPDATED JSON PROMPT (The MOST detailed version) ---
+            const prompt = `
+                You are an expert qualitative data analyst.
+                Your sole task is to analyze the following interview data and return the analysis in a STRICT JSON format.
+                
+                You MUST provide exactly five (5) key themes and a summary for each.
+                
+                The JSON structure MUST look like this:
+                
+                {
+                "analysis_summary": "A brief, one-paragraph overview of all the data.",
+                "themes": [
+                    {
+                    "title": "Theme 1 Title (e.g., User Frustration)",
+                    "summary": "A brief summary of how this theme is supported by the data."
+                    },
+                    // ... Repeat for 5 total themes
+                ]
+                }
+                
+                DATA TO ANALYZE:
+                ---
+                ${textData}
+                ---
+            `;
+
+            // Also, you can try setting the system instruction in your generateContent call for extra reinforcement:
+            /*
+            // Inside your ai.models.generateContent call
+            config: {
+                responseMimeType: "application/json",
+                systemInstruction: "You are an expert qualitative data analyst that returns output ONLY in the requested JSON format.",
+            },
+            */
+                        // --- END JSON PROMPT ---
+
+
+            // --- UPDATED TRY BLOCK ---
+            // Inside the handleAnalysis function in index.html
+
+            // --- UPDATED TRY BLOCK WITH VALIDATION ---
+            try {
+                // Inside the handleAnalysis function's try block
+
+                const response = await ai.models.generateContent({
+                    model: "gemini-2.5-pro", 
+                    contents: prompt,
+                    config: {
+                        // 1. Enforces output format from the API server
+                        responseMimeType: "application/json",
+                        
+                        // 2. Enforces model persona (MAXIMUM COMPLIANCE)
+                        systemInstruction: "You are an expert qualitative data analyst. Your ONLY job is to analyze the data and return the results as a single, valid JSON object. DO NOT include any text outside the JSON object.",
+                        
+                        // You could also add other settings here, like temperature
+                        // temperature: 0.1, // A low temperature can help make the model more deterministic
+                    },
+                });
+
+                const jsonText = response.text.trim();
+                const resultObject = JSON.parse(jsonText);
+                
+                // ⭐ CRITICAL VALIDATION CHECK
+                if (!resultObject || !resultObject.analysis_summary || !Array.isArray(resultObject.themes)) {
+                    throw new Error("Invalid JSON structure returned by the model.");
+                }
+
+                // ⭐ IMPROVED HTML BUILDING with Optional Chaining for safety
+                // ... after the validation check
+
+                // BUILD THE STRUCTURED HTML DISPLAY
+                let htmlOutput = `
+                    <div style="margin-bottom: 25px;">
+                        <h3>Summary Overview</h3>
+                        
+                        <p style="white-space: pre-wrap;">${resultObject.analysis_summary}</p>
+                    </div>
+                    
+                    <h3>Key Themes (${resultObject.themes.length || 0})</h3>
+                    <ul style="list-style-type: none; padding: 0;">
+                `;
+
+                // Loop through the themes array and create an HTML list item for each
+                resultObject.themes.forEach((theme, index) => {
+                    htmlOutput += `
+                        <li style="margin-bottom: 25px; border-left: 5px solid #4CAF50; background: #e8f5e9; padding: 15px; border-radius: 4px;">
+                            <h4 style="margin-top: 0; color: #388e3c;">Theme ${index + 1}: ${theme.title}</h4> 
+                            
+                            <p style="margin-bottom: 0; white-space: pre-wrap;">${theme.summary}</p>
+                        </li>
+                    `;
+                });
+
+                htmlOutput += `</ul>`;
+
+                analysisResults.innerHTML = htmlOutput;
+                // ... rest of the try block
+
+            } catch (error) {
+                // This catch block now handles the custom error thrown above
+                console.error("Analysis Failed:", error);
+                
+                let errorMessage = "ERROR: Analysis failed. Please check the console for details.";
+                
+                if (error instanceof SyntaxError) {
+                    errorMessage = `JSON Parsing Error: The model returned invalid JSON. Try a different input or retry the analysis.`;
+                } else if (error.message.includes("Invalid JSON structure")) {
+                    errorMessage = `Analysis failed: The model returned a valid JSON object, but it did not have the expected 'analysis_summary' or 'themes' properties.`;
+                } else {
+                    errorMessage = `Unexpected Error: ${error.message}. Check the console for more information.`;
+                }
+
+                analysisResults.textContent = errorMessage;
+                
+            } finally {
+                analyzeButton.disabled = false;
+            }
+            // ...
+        }
+
+        // 4. Attach the function to the button click event
+        analyzeButton.addEventListener('click', handleAnalysis);
+
+    </script>
 </body>
 </html>
